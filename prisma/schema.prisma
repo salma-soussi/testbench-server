@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  firstname String?  @db.VarChar(255)
+  lastname  String?  @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  createAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Table {
+  id            Int         @id @default(autoincrement()) @map("PK")
+  name          String      @unique @map("simpleName") @db.VarChar(255)
+  attributes    Attribute[]
+  rowCount      Int
+  numForeignKey Int?
+  description   String?     @db.VarChar(400)
+  categories    Category    @relation(fields: [categoryId], references: [id])
+  categoryId    Int
+  createAt      DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("tables")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  tables    Table[]
+  createAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model Attribute {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  type        String   @db.VarChar(255)
+  description String?  @db.VarChar(400)
+  tableId     Int
+  owner       Table    @relation(fields: [tableId], references: [id])
+  createAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
