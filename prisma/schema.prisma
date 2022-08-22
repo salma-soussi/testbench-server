@@ -26,11 +26,11 @@ model Table {
   id            Int         @id @default(autoincrement()) @map("PK")
   name          String      @unique @map("simpleName") @db.VarChar(255)
   attributes    Attribute[]
-  rowCount      Int
+  rowCount      Int?
   numForeignKey Int?
   description   String?     @db.VarChar(400)
-  categories    Category    @relation(fields: [categoryId], references: [id])
-  categoryId    Int
+  categories    Category?   @relation(fields: [categoryId], references: [id])
+  categoryId    Int?
   createAt      DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
