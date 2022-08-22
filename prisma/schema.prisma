@@ -15,6 +15,7 @@ model User {
   firstname String?  @db.VarChar(255)
   lastname  String?  @db.VarChar(255)
   email     String   @unique @db.VarChar(255)
+  hash      String
   createAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
 
