@@ -16,7 +16,7 @@ import { TablesService } from './tables.service';
 export class TablesController {
   constructor(private tablesService: TablesService) {}
 
-  @Post('add')
+  @Post('create')
   create(@Body() dto: CreateTablesDto) {
     return this.tablesService.create(dto);
   }
@@ -24,6 +24,16 @@ export class TablesController {
   @Get()
   getAll() {
     return this.tablesService.getAll();
+  }
+
+  @Get('fk/:tableName')
+  findFk(@Param('tableName') tableName: string) {
+    return this.tablesService.findFk(tableName);
+  }
+
+  @Post('init')
+  add() {
+    return this.tablesService.init();
   }
 
   @Get(':id')
