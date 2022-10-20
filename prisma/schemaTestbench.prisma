@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client2"
+    binaryTargets = ["native","debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL2")
+}
+

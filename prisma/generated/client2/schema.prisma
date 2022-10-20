@@ -1,0 +1,47 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./generated/client2"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL2")
+}
+
+model Attribute {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  type        String   @db.VarChar(255)
+  description String?  @db.VarChar(400)
+  pKey        String?  @db.VarChar(255)
+  fTable      String?  @db.VarChar(255)
+  pColumn     String?  @db.VarChar(255)
+  indexName   String?  @db.VarChar(255)
+  tableName   String?  @db.VarChar(255)
+  tableId     Int?
+  createAt    DateTime @default(now())
+  updatedAt   DateTime
+  tables      tables?  @relation(fields: [tableId], references: [PK])
+}
+
+model tables {
+  PK            Int         @id @default(autoincrement())
+  simpleName    String      @unique @db.VarChar(255)
+  rowCount      Int?
+  numForeignKey Int?
+  description   String?     @db.VarChar(400)
+  createAt      DateTime    @default(now())
+  updatedAt     DateTime
+  Attribute     Attribute[]
+}
+
+model users {
+  id        Int      @id @default(autoincrement())
+  firstname String?  @db.VarChar(255)
+  lastname  String?  @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  hash      String
+  createAt  DateTime @default(now())
+  updatedAt DateTime
+}

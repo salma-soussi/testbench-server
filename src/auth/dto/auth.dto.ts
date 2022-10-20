@@ -10,10 +10,10 @@ export class AuthDto {
   password: string;
 
   @IsString()
-  firstName?: string;
+  firstname?: string;
 
   @IsString()
-  lastName?: string;
+  lastname?: string;
 }
 
 export class LogDto {

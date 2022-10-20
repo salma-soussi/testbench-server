@@ -1,12 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/client1"
+  binaryTargets = ["native","debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,26 +24,14 @@ model User {
 model Table {
   id            Int         @id @default(autoincrement()) @map("PK")
   name          String      @unique @map("simpleName") @db.VarChar(255)
-  attributes    Attribute[]
   rowCount      Int?
   numForeignKey Int?
   description   String?     @db.VarChar(400)
-  categories    Category?   @relation(fields: [categoryId], references: [id])
-  categoryId    Int?
   createAt      DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  attributes    Attribute[]
 
   @@map("tables")
-}
-
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(255)
-  tables    Table[]
-  createAt  DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("categories")
 }
 
 model Attribute {
@@ -52,8 +39,13 @@ model Attribute {
   name        String   @db.VarChar(255)
   type        String   @db.VarChar(255)
   description String?  @db.VarChar(400)
+  pKey        String?  @db.VarChar(255)
+  fTable      String?  @db.VarChar(255)
+  pColumn     String?  @db.VarChar(255)
+  indexName   String?  @db.VarChar(255)
+  tableName   String?  @db.VarChar(255)
   tableId     Int?
-  owner       Table?   @relation(fields: [tableId], references: [id])
   createAt    DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  owner       Table?   @relation(fields: [tableId], references: [id])
 }

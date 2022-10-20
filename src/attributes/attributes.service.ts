@@ -1,10 +1,13 @@
-import { ConsoleLogger, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateAttributeDto, EditAttributeDto } from './dto';
+import { ForbiddenException, Injectable } from "@nestjs/common";
+import { ParentKey, setParentKey } from "src/data/parentKey";
+import { RelationshipKey, setRelationshipKey } from "src/data/relationshipKey";
+import { PrismaService } from "src/prisma/prisma.service";
+import { PrismaService2 } from "src/prisma/prisma2.service";
+import { CreateAttributeDto, EditAttributeDto } from "./dto";
 
 @Injectable()
 export class AttributesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private prisma2: PrismaService2) {}
 
   async create(dto: CreateAttributeDto) {
     const attribute = this.prisma.attribute.create({
@@ -36,6 +39,15 @@ export class AttributesService {
     return attribute;
   }
 
+  async getByTableId(id: number) {
+    const attribute = await this.prisma.attribute.findMany({
+      where: {
+        tableId: id,
+      },
+    });
+    return attribute;
+  }
+
   async delete(id: number) {
     const attribute = this.prisma.attribute.delete({
       where: {
@@ -44,6 +56,20 @@ export class AttributesService {
       select: {
         id: true,
         name: true,
+      },
+    });
+    return attribute;
+  }
+
+  async deleteAll() {
+    const attribute = this.prisma.attribute.deleteMany();
+    return attribute;
+  }
+
+  async deleteOfTable(id: number) {
+    const attribute = this.prisma.attribute.deleteMany({
+      where: {
+        tableId: id,
       },
     });
     return attribute;
@@ -63,46 +89,129 @@ export class AttributesService {
     return attribute;
   }
 
-  async init() {
-    const tablesNames: [{ TABLE_NAME: string }] = await this.prisma
-      .$queryRaw`SELECT TABLE_NAME FROM Testbench.INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'`;
-
-    const nameType = Promise.all(
-      tablesNames.map(async (name) => {
-        const realName = 'TestbenchVisualisation.' + name.TABLE_NAME;
-        const res: [{ COLUMN_NAME: string; DATA_TYPE: string }] = await this
-          .prisma
-          .$queryRaw`SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME =${name.TABLE_NAME}`;
-        return res;
-      }),
-    );
-
-    const test = Promise.all([tablesNames, nameType]).then((val) => {
-      const result = {
-        tablesNames: val[0].flat(),
-        columnNameType: val[1],
-      };
-      return result;
+  async findName(tableName: string) {
+    const table = await this.prisma.attribute.findMany({
+      where: {
+        fTable: tableName,
+      },
     });
+    return table;
+  }
+  async init() {
+    const tables = await this.prisma.table.findMany();
+    const attributes = await this.prisma.attribute.findMany();
 
-    const all = [];
-    for (let i = 0; i < (await test).tablesNames.length; i++) {
-      for (let j = 0; j < (await test).columnNameType[i].length; j++) {
+    const allAttributes = [];
+    attributes.map((attribute) => {
+      tables.map((table) => {
+        if (table.name === attribute.fTable) {
+          attributes.map((key) => {
+            if (key.tableId === table.id && key.pKey) {
+              allAttributes.push({
+                id: attribute.id,
+                pColumn: key.name,
+              });
+            }
+          });
+        }
+      });
+      Object.keys(RelationshipKey).forEach(async function (key, index) {
+        if (
+          RelationshipKey[key].name.includes(attribute.name) &&
+          attribute.type === "bigint"
+        ) {
+          allAttributes.push({
+            id: attribute.id,
+            pColumn: "PK",
+            fTable: RelationshipKey[key].tableName,
+          });
+        }
+      });
+
+      Object.keys(ParentKey).forEach(async function (key) {
+        if (
+          attribute.name === "parentPK" &&
+          ParentKey[key].name.includes(attribute.tableName) &&
+          attribute.type === "bigint"
+        ) {
+          allAttributes.push({
+            id: attribute.id,
+            pColumn: "PK",
+            fTable: ParentKey[key].parent,
+          });
+        }
+      });
+    });
+    return Promise.all(
+      allAttributes.map((all) => {
+        if (all.fTable) {
+          const att = this.prisma.attribute.update({
+            where: {
+              id: all.id,
+            },
+            data: {
+              pColumn: all.pColumn,
+              fTable: all.fTable,
+            },
+            select: {
+              name: true,
+            },
+          });
+          return att;
+        } else {
+          const att = this.prisma.attribute.update({
+            where: {
+              id: all.id,
+            },
+            data: {
+              pColumn: all.pColumn,
+            },
+            select: {
+              name: true,
+            },
+          });
+          return att;
+        }
+      })
+    );
+  }
+
+  async importDbAttribute(data: any) {
+    const attributes = [];
+    console.log(data.length);
+    for (let i = 0; i < data.length - 1; i++) {
+      if (data[i]["Name"]) {
         const attribute = await this.prisma.attribute.create({
           data: {
-            name: (await test).columnNameType[i][j].COLUMN_NAME,
-            type: (await test).columnNameType[i][j].DATA_TYPE,
+            name: data[i]["Name"],
+            type: data[i].Type,
+            pKey: data[i]["Primary key"],
+            fTable: data[i]["Foreign table"],
+            indexName: data[i]["Index name"],
+            tableName: data[i]["Table name"],
+            pColumn: data[i]["Table name"],
+            description: data[i]["Description"],
             owner: {
               connect: {
-                name: (await test).tablesNames[i].TABLE_NAME,
+                name: data[i]["Table name"],
               },
             },
           },
         });
-        all.push(attribute);
+
+        attributes.push(attribute);
       }
     }
+    return attributes;
+  }
 
-    return all;
+  async exportRelations() {
+    return { RelationshipKey: RelationshipKey, ParentKey: ParentKey };
+  }
+
+  async importRelations(data: any) {
+    setParentKey(data[0]);
+    setRelationshipKey(data[1]);
+    return { RelationshipKey: RelationshipKey, ParentKey: ParentKey };
   }
 }

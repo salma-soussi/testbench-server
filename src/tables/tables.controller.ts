@@ -8,17 +8,23 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-} from '@nestjs/common';
-import { CreateTablesDto, EditTablesDto } from './dto';
-import { TablesService } from './tables.service';
+  Req,
+} from "@nestjs/common";
+import { Request } from "express";
+import { CreateTablesDto, EditTablesDto } from "./dto";
+import { TablesService } from "./tables.service";
 
-@Controller('tables')
+@Controller("tables")
 export class TablesController {
   constructor(private tablesService: TablesService) {}
 
-  @Post('create')
+  @Post("create")
   create(@Body() dto: CreateTablesDto) {
     return this.tablesService.create(dto);
+  }
+  @Post("importDb")
+  importDb(@Req() req: Request) {
+    return this.tablesService.importDbTable(req.body);
   }
 
   @Get()
@@ -26,46 +32,68 @@ export class TablesController {
     return this.tablesService.getAll();
   }
 
-  @Get('fk/:tableName')
-  findFk(@Param('tableName') tableName: string) {
-    return this.tablesService.findFk(tableName);
+  @Patch("refresh")
+  refresh() {
+    return this.tablesService.refresh();
   }
 
-  @Post('init')
+  @Get("search/:tableName/:column/:id")
+  findPk(
+    @Param("tableName") tableName: string,
+    @Param("column") column: string,
+    @Param("id")
+    id: number
+  ) {
+    return this.tablesService.getByIdName(tableName, column, id);
+  }
+
+  @Post("init")
   add() {
     return this.tablesService.init();
   }
 
-  @Get(':id')
+  @Get("/one/:name")
+  getOneByName(
+    @Param("name")
+    name: string
+  ) {
+    return this.tablesService.getOneByName(name);
+  }
+  @Get(":id")
   getOne(
     @Param(
-      'id',
-      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND }),
+      "id",
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND })
     )
-    id: number,
+    id: number
   ) {
     return this.tablesService.getOne(id);
   }
 
-  @Delete(':id')
+  @Delete(":id")
   delete(
     @Param(
-      'id',
-      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND }),
+      "id",
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND })
     )
-    id: number,
+    id: number
   ) {
     return this.tablesService.delete(id);
   }
 
-  @Patch(':id')
+  @Delete("")
+  deleteAll() {
+    return this.tablesService.deleteAll();
+  }
+
+  @Patch(":id")
   edit(
     @Param(
-      'id',
-      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND }),
+      "id",
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND })
     )
     id: number,
-    @Body() dto: EditTablesDto,
+    @Body() dto: EditTablesDto
   ) {
     return this.tablesService.edit(id, dto);
   }

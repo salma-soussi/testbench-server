@@ -13,7 +13,4 @@ export class EditTablesDto {
   @IsOptional()
   numForeignKey?: number;
 
-  @IsOptional()
-  @IsNumber()
-  categoryId?: number;
 }
